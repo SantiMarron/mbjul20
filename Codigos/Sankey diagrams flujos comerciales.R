@@ -45,7 +45,11 @@ TMEC_fin <- TMEC_proc %>%
 
 ##### Sankey #####
 
-links <- TMEC_fin 
+links <- TMEC_fin %>% 
+  mutate(group = case_when(Reporter_es == 'México' ~ 'type_a',
+                           Reporter_es == 'Canadá' ~ 'type_b',
+                           Reporter_es == 'EUA' ~ 'type_c')) %>% 
+  mutate(group = as.factor(group))
 
 # Enlistar nodos
 
@@ -53,6 +57,28 @@ nodes <- data.frame(
   name=c(as.character(links$Partner_es), as.character(links$Reporter_es)) %>% 
     unique()
 )
+
+# Add a 'group' column to each node. Here I decide to put all of them in the same group to make them grey
+
+nodes <- nodes %>% 
+  mutate(
+    group = 
+      case_when(name %in% c('China', 'India', 'Suiza', 'Singapur', 'Bélgica','Suecia') ~ 'gp1',
+                name %in% c('México', 'Alemania', 'Reino Unido', 'Malasia', 'Israel', 'Arabia Saudita') ~ 'gp2',
+                name %in% c('Canadá', 'India', 'Suiza') ~ 'gp3',
+                name %in% c('Japón', 'Corea del Sur', 'Perú') ~ 'gp4',
+                name %in% c('EUA') ~ 'gp5',
+                name %in% c('Vietnam','España','Italia','Francia','Indonesia') ~ 'gp6',
+                TRUE ~ 'gp7')) %>% 
+  mutate(group = as.factor(group))
+
+# Give a color for each group:
+
+my_color <- 'd3.scaleOrdinal() .domain(["type_c", "type_b", "type_a", 
+            "gp1", "gp2", "gp3", "gp4", "gp5", "gp6", "gp7"]) 
+            .range(["grey", "brown", "darkgreen", "maroon", "green", "red", "orange", 
+            "navy", "purple", "silver"])'
+
 
 # Formato especifico de origen y destino
 
@@ -64,6 +90,7 @@ links$IDtarget <- match(links$Reporter_es, nodes$name)-1
 p <- sankeyNetwork(Links = links, Nodes = nodes,
                    Source = "IDsource", Target = "IDtarget",
                    Value = "Val", NodeID = "name", 
+                   colourScale = my_color, LinkGroup = "group", NodeGroup="group",
                    sinksRight=FALSE, fontSize = 14, fontFamily = "Century Gothic", nodeWidth = 15)
 p
 
